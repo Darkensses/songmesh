@@ -1,3 +1,4 @@
+import {Noise} from 'noisejs';
 import './style.css'
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
@@ -77,6 +78,10 @@ const planeGeo = new THREE.PlaneGeometry(16,16,32,32)
 const planeMesh = new THREE.Mesh(planeGeo, new THREE.MeshBasicMaterial({color: 'blue', wireframe: true}));
 scene.add(planeMesh);
 
+planeGeo.attributes.position.array[2] = 5;
+planeGeo.attributes.position.array[98] = 5;
+planeGeo.attributes.position.array[3266] = 5;
+
 const test_array = [
   1.67, 1.89, 1.85, 1.63, 1.48, 1.39, 1.21, 1.28,
   1.29, 1.32, 1.26, 1.00, 1.10, 1.13, 1.01, 0.91,
@@ -84,30 +89,20 @@ const test_array = [
   0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00
 ]
 
-let copyPlane = planeGeo.attributes.position.array.slice();
-for(let i = 0; i<test_array.length; i++) {
-  copyPlane[i*3+2] = test_array[i]*0.5;
+for(let i=0; i<test_array.length; i++) {
+  planeGeo.attributes.position.array[i*3+2] = test_array[i];
 }
 
-console.log(planeGeo.attributes.position.array);
-console.log(copyPlane)
+console.log(planeGeo.attributes.position.array)
 
 /**
  * Animate
  */
 const clock = new THREE.Clock();
 const matrixAnim = new THREE.Matrix4();
+//planeGeo.rotateZ(270 * Math.PI / 180);
 let delta = 0;
-// test_array.forEach((ele, idx) => {
-//   const planeIndex = Math.floor((idx + delta) % planeGeo.attributes.position.array.length);
-//   planeGeo.attributes.position.array[planeIndex * 3 + 2] = ele;
-//   if(idx === 0) {
-//     console.log(planeIndex,planeGeo.attributes.position.array)
-//   }
-// })
-// planeGeo.attributes.position.needsUpdate = true;
-// planeGeo.computeVertexNormals();
-
+let currentIndex = 2;
 // Review:
 // https://github.com/bigmstone/terrain/blob/master/src/index.js
 function animate(){
@@ -118,22 +113,24 @@ function animate(){
     matrixAnim.makeScale(1,y,1);
     matrixAnim.setPosition(i-(count/2) + pad,y/4,0);
     instancedMesh.setMatrixAt(i,matrixAnim);
-
-
-    test_array.forEach((ele, idx) => {
-      const planeIndex = Math.floor((idx + delta) % copyPlane.length);
-      planeGeo.attributes.position.array[planeIndex * 3 + 2] = ele;
-
-      if(idx === 0) {
-        console.log(planeIndex,planeGeo.attributes.position.array)
-      }
-    })
-    planeGeo.attributes.position.needsUpdate = true;
-    planeGeo.computeVertexNormals();
-    delta += 0.06;
   }
-
   instancedMesh.instanceMatrix.needsUpdate = true;
+
+
+  //planeGeo.attributes.position.array[currentIndex] = 0;
+  test_array.forEach((value,index) => {
+    planeGeo.attributes.position.array[currentIndex+(3*index)] = 0;
+  })
+
+  let nextRow = Math.floor((clock.getElapsedTime()*1000) / 3 / 33) + 1;
+  currentIndex = (nextRow % 33) * 33 * 3 + 2;
+  //planeGeo.attributes.position.array[currentIndex] = test_array[0];
+  test_array.forEach((value,index) => {
+    planeGeo.attributes.position.array[currentIndex+(3*index)] = value;
+  })
+
+  planeGeo.attributes.position.needsUpdate = true;
+
 
   renderer.render(scene, camera);
   requestAnimationFrame(animate);
